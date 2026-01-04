@@ -8,8 +8,14 @@ import hashlib
 # ==========================================
 # 👇 CONFIGURATION 👇
 # ==========================================
-GOOGLE_API_KEY = "AIzaSyCwjIu4Hc4HczJUeZdfVgw1j1VxWPZq-JM"  # Apni Key Check karlena
-genai.configure(api_key=GOOGLE_API_KEY)
+# ✅ YE LIKHO (Ye Streamlit ke secret box se key uthayega)
+import streamlit as st # Ensure ye import hai
+
+# Secret key fetch karo
+api_key = st.secrets["GOOGLE_API_KEY"] 
+genai.configure(api_key=api_key)
+
+# Note: Gemini 1.5 Flash use karo, wo Free tier par kabhi block nahi hota
 model = genai.GenerativeModel('gemini-2.5-flash')
 
 st.set_page_config(
