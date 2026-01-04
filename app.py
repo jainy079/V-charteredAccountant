@@ -2,99 +2,170 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 
-# --- PAGE SETUP ---
-st.set_page_config(page_title="CA Final AI Companion", layout="wide")
+# ==========================================
+# 👇 APNI API KEY YAHAN PASTE KAR DO 👇
+# (Taaki Vanshika ko baar-baar daalni na pade)
+# ==========================================
+GOOGLE_API_KEY = "AIzaSyCwjIu4Hc4HczJUeZdfVgw1j1VxWPZq-JM" 
 
+# --- PAGE CONFIGURATION (Professional Look) ---
+st.set_page_config(
+    page_title="Vanshika's CA Workspace",
+    page_icon="🎓",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# --- CUSTOM CSS (Sajawat) ---
 st.markdown("""
 <style>
-.big-font { font-size:30px !important; font-weight: bold; color: #1E88E5; }
-.ca-header { font-size:20px; font-weight: bold; }
+    .main {
+        background-color: #F5F7F9;
+    }
+    .stButton>button {
+        width: 100%;
+        background-color: #004B87;
+        color: white;
+        font-weight: bold;
+        border-radius: 8px;
+        padding: 10px;
+    }
+    .stButton>button:hover {
+        background-color: #003366;
+        color: white;
+    }
+    h1 {
+        color: #004B87;
+        font-family: 'Helvetica', sans-serif;
+    }
+    .big-card {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<p class="big-font">CA Exam & Audit Expert (AI)</p>', unsafe_allow_html=True)
-st.write("Specialized for Vanshika's CA Final Preparation (Powered by Gemini 2.5)")
-
-# --- SIDEBAR (API KEY) ---
-with st.sidebar:
-    st.header("Settings")
-    api_key = st.text_input("Enter Google API Key", type="password")
-    st.info("Paste the key starting with 'AIza...' here")
-    
-    mode = st.radio("Select Mode:", ["📝 Answer Checker (Image)", "🧠 Generate Quiz", "💬 Ask Doubt"])
-
-# --- FUNCTION TO GET GEMINI RESPONSE ---
-def get_gemini_response(input_prompt, image=None):
-    if not api_key:
-        return "Please enter the API Key in the sidebar first."
-    
-    genai.configure(api_key=api_key)
-    
-    # --- UPDATED: STRICTLY USING GEMINI 2.5 FLASH ---
+# --- GEMINI SETUP ---
+try:
+    genai.configure(api_key=GOOGLE_API_KEY)
     model = genai.GenerativeModel('gemini-2.5-flash')
-    
-    try:
-        if image:
-            response = model.generate_content([input_prompt, image])
-        else:
-            response = model.generate_content(input_prompt)
-        return response.text
-    except Exception as e:
-        return f"Error: {str(e)}"
+except Exception as e:
+    st.error(f"API Key Error: {e}")
+
+# --- SIDEBAR NAVIGATION ---
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/2232/2232688.png", width=100)
+    st.title("CA Final Toolkit")
+    st.write("Welcome, **Vanshika!** 👩‍🎓")
+    st.markdown("---")
+    mode = st.radio("Select Tool:", 
+        ["📝 Answer Checker (ICAI Mode)", 
+         "🧠 Exam Quiz Generator", 
+         "💡 Concept Explainer"]
+    )
+    st.markdown("---")
+    st.info("⚡ Powered by Gemini 2.5")
+
+# --- MAIN APP LOGIC ---
+
+# 1. HEADER
+st.markdown(f"<h1>{mode}</h1>", unsafe_allow_html=True)
 
 # --- MODE 1: ANSWER CHECKER ---
-if mode == "📝 Answer Checker (Image)":
-    st.subheader("Upload Handwritten Answer")
-    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+if mode == "📝 Answer Checker (ICAI Mode)":
+    st.markdown('<div class="big-card">Upload your handwritten answer. AI will check it strictly as per ICAI standards.</div>', unsafe_allow_html=True)
     
-    if uploaded_file is not None:
+    uploaded_file = st.file_uploader("📸 Upload Answer Sheet", type=["jpg", "jpeg", "png"])
+    
+    col1, col2 = st.columns([1, 1])
+    
+    if uploaded_file:
         image = Image.open(uploaded_file)
-        st.image(image, caption="Uploaded Answer", use_column_width=True)
+        with col1:
+            st.image(image, caption="Your Answer", use_column_width=True)
         
-        if st.button("Check as ICAI Examiner"):
-            with st.spinner("Analyzing handwriting with Gemini 2.5..."):
-                prompt = """
-                Act as a strict Examiner for the Institute of Chartered Accountants of India (ICAI). 
-                The user has uploaded a handwritten answer for a CA Final/Inter level question.
-                
-                Your Task:
-                1. Identify the topic from the image.
-                2. Check the answer strictly based on ICAI Provision, Analysis, and Conclusion format.
-                3. Point out specific mistakes (keywords missing, section number errors).
-                4. Give it a mark out of 5.
-                5. REWRITE the correct answer in the standard ICAI format below.
-                """
-                response = get_gemini_response(prompt, image)
-                st.markdown(response)
+        with col2:
+            if st.button("🔍 Check Answer Now"):
+                with st.spinner("Acting as Strict Examiner..."):
+                    try:
+                        prompt = """
+                        Act as a strict Examiner for ICAI (CA Final Level).
+                        Analyze this handwritten answer image.
+                        
+                        Output Format:
+                        1. **Topic Identified:** [Name]
+                        2. **Mistakes:** [Bullet points of missing keywords/sections]
+                        3. **Marks:** [Give score out of 5]
+                        4. **Correct Answer:** [Rewrite the perfect answer in professional language]
+                        """
+                        response = model.generate_content([prompt, image])
+                        st.success("Analysis Complete!")
+                        st.markdown(response.text)
+                    except Exception as e:
+                        st.error(f"Error: {str(e)}")
 
 # --- MODE 2: QUIZ GENERATOR ---
-elif mode == "🧠 Generate Quiz":
-    st.subheader("Exam Style Quiz Generator")
-    topic = st.text_input("Enter Topic (e.g., Audit of Banks, GST Input Tax Credit)")
-    level = st.selectbox("Level", ["CA Inter", "CA Final"])
+elif mode == "🧠 Exam Quiz Generator":
+    st.markdown('<div class="big-card">Generate tricky MCQs for any chapter.</div>', unsafe_allow_html=True)
     
-    if st.button("Generate 20 Questions"):
-        with st.spinner(f"Creating {level} level questions using Gemini 2.5..."):
-            prompt = f"""
-            Create a tough mock test of 20 Multiple Choice Questions (MCQs) for {level} students.
-            Topic: {topic}.
-            The questions should be scenario-based and tricky, similar to recent ICAI exam trends.
-            Provide the questions first, and the Answer Key with reasoning at the very end.
-            """
-            response = get_gemini_response(prompt)
-            st.markdown(response)
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        topic = st.text_input("Enter Chapter/Topic Name (e.g., GST Audit, Forex)")
+    with col2:
+        num_q = st.number_input("Questions", min_value=1, max_value=10, value=5)
+    
+    if st.button("🎲 Generate Quiz"):
+        if topic:
+            with st.spinner(f"Creating {num_q} tricky questions on {topic}..."):
+                try:
+                    prompt = f"""
+                    Create {num_q} CA Final level MCQs on topic: '{topic}'.
+                    Questions should be scenario-based.
+                    IMPORTANT: Do NOT show the answer immediately.
+                    Format each question as:
+                    **Q1:** Question text...
+                    (A) Option 1
+                    (B) Option 2
+                    (C) Option 3
+                    (D) Option 4
+                    
+                    <Hidden Answer Key at the bottom>
+                    """
+                    response = model.generate_content(prompt)
+                    st.session_state['quiz_result'] = response.text
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
+        else:
+            st.warning("Please enter a topic first.")
 
-# --- MODE 3: DOUBT SOLVER ---
-elif mode == "💬 Ask Doubt":
-    st.subheader("Deep Concept Analysis")
-    doubt = st.text_area("Paste your doubt or concept name here:")
+    # Show Quiz Result if available
+    if 'quiz_result' in st.session_state:
+        st.markdown("---")
+        st.markdown(st.session_state['quiz_result'])
+        st.info("💡 Note: Answers are usually provided at the bottom of the generated text.")
+
+# --- MODE 3: CONCEPT EXPLAINER ---
+elif mode == "💡 Concept Explainer":
+    st.markdown('<div class="big-card">Stuck on a concept? Ask here for a deep dive explanation.</div>', unsafe_allow_html=True)
     
-    if st.button("Explain like a Pro"):
-        with st.spinner("Searching deep concepts..."):
-            prompt = f"""
-            You are a CA Final Topper and Tutor. Explain the following concept: '{doubt}'.
-            Explain it in depth. Use examples, relevant Section numbers of Companies Act/Income Tax Act, 
-            and relevant Case Laws if applicable. Structure the answer for exam revision.
-            """
-            response = get_gemini_response(prompt)
-            st.markdown(response)
+    doubt = st.text_area("Type your doubt here...", height=150)
+    
+    if st.button("🚀 Explain Detail"):
+        if doubt:
+            with st.spinner("Searching Study Material & Case Laws..."):
+                try:
+                    prompt = f"""
+                    Explain this CA Final concept strictly as per ICAI Study Material: '{doubt}'.
+                    Include:
+                    1. Definition / Provision
+                    2. Relevant Section Numbers
+                    3. Case Laws (if applicable)
+                    4. Easy Example
+                    """
+                    response = model.generate_content(prompt)
+                    st.markdown(response.text)
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
